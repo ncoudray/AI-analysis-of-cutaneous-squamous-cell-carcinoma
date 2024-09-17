@@ -17,8 +17,6 @@ module load singularity/3.9.8
 singularity shell  --bind /gpfs/data/coudraylab/NN/Head_Neck/carucci/Histomorphological-Phenotype-Learning:/mnt docker://gcfntnu/scanpy:1.7.0 << eof
 cd /mnt/
 
-
-
 python3 ./run_representationsleiden.py \
  --meta_field cSCC102_v01 \
  --matching_field patients \
@@ -26,16 +24,6 @@ python3 ./run_representationsleiden.py \
  --h5_complete_path  results/BarlowTwins_3/cSCC102_NYUCSFBWH_448px_0um252/h224_w224_n3_zdim128/hdf5_cSCC102_NYUCSFBWH_448px_0um252_he_complete.h5 \
  --resolution 7.0 \
  --subsample 200000
-
-
-
-
-
-
-
-
-
-
 
 
 eof
