@@ -15,6 +15,7 @@ The code here was developed using the slurm executor on NYU's [UltraViolet HPC c
 ### Pre-processing
 
 Images first need to be tiled and converted to H5. For all datasets, the following commands from DeepPATH wee used:
+
 **Tiling:**
 ```shell
 python DeepPATH_code/00_preprocessing/0b_tileLoop_deepzoom6.py  -s 448 -e 0  -j 20 -B 75 -M -1  -P 0.252  -p -1    -o "448px_Cohort_B75_0um252px" -N '57,22,-8,20,10,5' /path_to_slides/*svs
@@ -62,22 +63,23 @@ sbatch sb_05_Cluster_1.sh
 
 The entry `cSCC101_A_v01_ToFilter_class_folds_NYUCSFBWH.pkl` was obtained using the [HPL fold creation script](https://github.com/AdalbertoCq/Histomorphological-Phenotype-Learning/tree/master/utilities/fold_creation). 
 
-* Generate 100 random tiles from each cluster:
+**Generate 100 random tiles from each cluster:**
 ```shell
 sbatch sb_06a_RepTiles_1.sh
 ``` 
 
 Then, the clusters need to be visually assessed to identify the artifacts ones. 
 
-* Create pickle file with the IDs of the cluster to remove.
+**Create pickle file with the IDs of the cluster to remove.**
+
 This can be done using the [HPL cleaning script](https://github.com/AdalbertoCq/Histomorphological-Phenotype-Learning/tree/master/utilities/tile_cleaning).
 
-* Remove the corresponding tiles from the h5 file:
+**Remove the corresponding tiles from the h5 file:**
 ```shell
 sbatch sb_06b_RemoveTiles_1.sh
 ```
 
-* Run Leiden clustering at different resolution using the cleaned h5 file:
+**Run Leiden clustering at different resolution using the cleaned h5 file:**
 ```shell
 for resolution in 0.05 0.1 0.25 0.5 0.75 1.0 1.25 1.5 1.75 2.0 2.5 3.0 5.0 7.0 9.0
 do 
@@ -85,14 +87,14 @@ sbatch --job-name=cSCC102t_E_v02a_cluster_HN_r${resolution}_200k --output=rq_cSC
 done
 ```
 
-* Identify optimal Leiden resolution to use:
+**Identify optimal Leiden resolution to use:**
 ```shell
 sbatch
 sb_05b_assess_clusters.sh
 ```
 
 
-* Add clinical data into the h5 file:
+**Add clinical data into the h5 file:**
 ```shell
 sbatch sb_04_AddField.sh
 ```
@@ -110,7 +112,7 @@ the `labels_SSL_NYUCSFBWH_20220524.csv` file contains the clinical data with the
 
 
  
-* Assign clusters to the h5 files containing the annotations information
+**Assign clusters to the h5 files containing the annotations information**
 ```shell
 for resolution in 0.05 0.1 0.25 0.5 0.75 1.0 1.25 1.5 1.75  2.0 2.5 3.0 3.5 4.0 4.5 5.0
 do 
@@ -118,40 +120,41 @@ sbatch --job-name=cSCC102t_F_v02a_r${resolution}_300k --output=rq_cSCC102t_F_v02
 done
 ```
  
-* Generate 100 random tiles from each cluster for visual assessment by pathologists:
+**Generate 100 random tiles from each cluster for visual assessment by pathologists:**
 ```shell
 sb_06a_RepTiles_2.sh
 ```
 
-* Run Logistic regression on all folds of Leiden classification  to assess binary prediction of good vs poor outcome for different Leiden clustering:
+**Run Logistic regression on all folds of Leiden classification  to assess binary prediction of good vs poor outcome for different Leiden clustering:**
 ```shell
 sbatch sb_07a_LogisticReg.sh
 ```
 
-* Run Logistic regression on a frozen Leiden fold:
+**Run Logistic regression on a frozen Leiden fold:**
 ```shell
 sbatch sb_07b_LogisticReg.sh
 ```
 
-* Run Cox regression on all Leiden folds:
+**Run Cox regression on all Leiden folds:**
 ```shell
 sbatch sb_08_CoxReg.sh
 ```
 
-* Run Cox regression on a given Leiden fold:
+**Run Cox regression on a given Leiden fold:**
 ```shell
 sbatch sb_09_CoxReg_Indiv.sh
 ```
 
 ### Inferance on an external test cohort
-* slides should be pre-processed and converted to h5 files using the same scriptis above used for the development set.
+**slides should be pre-processed and converted to h5 files using the same scriptis above used for the development set.**
 
-* Projection on the self-supervised model latent space:
+
+**Projection on the self-supervised model latent space:**
 ```shell
 sbatch sb_71_project_Mayo.sh
 ```
 
-* Add clinical data (RFS) into the h5 file:
+**Add clinical data (RFS) into the h5 file:**
 ```shell
 sbatch sb_72_AddField_Mayo.sh
 ```
@@ -162,22 +165,24 @@ Note: the  `labels_SSL_Mayo_RFS.csv` file should contain the following columns:
   * `os_event_data`: survival (in months)
   * `os_event_ind`: event (1: event; 0: no event)
 
-* Assign to this cohort the Leiden clusters computed on the development cohort to filter the artifacts:
 
+**Assign to this cohort the Leiden clusters computed on the development cohort to filter the artifacts:**
 ```shell
 resolution=7.0
 sbatch --job-name=cSCC102_73_v01_r${resolution}_300k --output=rq_cSCC102_73_v01_r${resolution}_%A_%a_300k.out  --error=rq_cSCC102_73_v01_r${resolution}_%A_%a_300k.err sb_73_AssignCluster_Mayo_v1.sh  $resolution
 ```
 
-* Create pickle file with the IDs of the cluster to remove. The same IDs as those used previously on the development cluster must be used. 
+**Create pickle file with the IDs of the cluster to remove.** 
+
+The same IDs as those used previously on the development cluster must be used. 
 This can be done using the [HPL cleaning script](https://github.com/AdalbertoCq/Histomorphological-Phenotype-Learning/tree/master/utilities/tile_cleaning).
 
-* Remove the corresponding tiles from the h5 file
+**Remove the corresponding tiles from the h5 file.**
 ```shell
 sbatch sb_74_RemoveTiles_Mayo.sh
 ```
 
-* Assign to this now filtered cohort the Leiden clusters computed on the development cohort to conduct the study:
+**Assign to this now filtered cohort the Leiden clusters computed on the development cohort to conduct the study:**
 ```shell
 resolution=0.75
 sbatch --job-name=cSCC102_75_v01_r${resolution}_300k --output=rq_cSCC102_75_v01_r${resolution}_%A_%a_300k.out  --error=rq_cSCC102_75_v01_r${resolution}_%A_%a_300k.err sb_75_AssignCluster_Mayo_v2.sh   $resolution
