@@ -15,19 +15,19 @@ The code here was developed using the slurm executor on NYU's [UltraViolet HPC c
 ### Pre-processing
 
 Images first need to be tiled and converted to H5. For all datasets, the following commands from DeepPATH wee used:
-* Tiling:
+**Tiling:**
 ```shell
 python DeepPATH_code/00_preprocessing/0b_tileLoop_deepzoom6.py  -s 448 -e 0  -j 20 -B 75 -M -1  -P 0.252  -p -1    -o "448px_Cohort_B75_0um252px" -N '57,22,-8,20,10,5' /path_to_slides/*svs
 ```
 
-* Combine all tiles 
+**Combine all tiles** 
 ```shell
 python DeepPATH_code/00_preprocessing/0d_SortTiles.py --SourceFolder='448px_Cohort_B75_0um252px' --Magnification=0.252  --MagDiffAllowed=0 --SortingOption=19 --PatientID=4 --nSplit 0 --Balance=2  --PercentValid=30 --PercentTest=30
 ```
 
 For the external test cohort, the same command with `--PercentValid=0 --PercentTest=100` was used instead.
 
-* Convert to h5 files:
+**Convert to h5 files:**
 ```shell
 mpirun -n 40 python DeepPATH_code/00_preprocessing/0e_jpgtoHDF.py  --input_path path_to_output_of_previous_step  --output hdf5_cSCC102_NYUCSFBWH_448px_0um252_he_train.h5   --chunks 40 --sub_chunks 20 --wSize 224 --mode 2 --subset='train'
 
@@ -40,22 +40,22 @@ For the external cohort, only the corrsponding 'test' h5 file script was run.
 
 
 ### Training and analysis on the development cohort
-* Training:
+**Training:**
 ```shell
 sbatch sb_01_train.sh
 ```
 
-* Projection of the whole development cohort into the trained network
+**Projection of the whole development cohort into the trained network**
 ```shell
 sbatch sb_02_project.sh
 ```
 
-* Combine the h5 files from the development cohort into 1 h5 file for future processing
+**Combine the h5 files from the development cohort into 1 h5 file for future processing**
 ```shell
 sb_03_combine.sh
 ``` 
 
-* Clustering number 1 to remove artifacts:
+**Clustering number 1 to remove artifacts:**
 ```shell
 sbatch sb_05_Cluster_1.sh
 ```
@@ -183,7 +183,7 @@ resolution=0.75
 sbatch --job-name=cSCC102_75_v01_r${resolution}_300k --output=rq_cSCC102_75_v01_r${resolution}_%A_%a_300k.out  --error=rq_cSCC102_75_v01_r${resolution}_%A_%a_300k.err sb_75_AssignCluster_Mayo_v2.sh   $resolution
 ```
 
-* Prepare `adatas` folder to use the new cohort as an external cohort. 
+**Prepare `adatas` folder to use the new cohort as an external cohort.**
 Since we used the `additional_as_fold` command during the development cohort process, in the `adatas` folder within the folder which is used in the `meta_folder` of the two following steps, the csv files of the development cohorts first need to be merged. For example, as a backup, first rename the original `cSCC102_v02a_tight_GP` to `cSCC102_v02a_tight_GP_dev_cohort`, then, using these commands within a new `cSCC102_v02a_tight_GP/adatas` folder in the same `results` folder path:
 ```shell
 for kk in `ls cSCC102_v02a_tight_GP_dev_cohort/adatas/cSCC102_NYUCSFBWH_448px_0um252_he_complete_filtered_tight_NYUCSF_GP*`; do kk2=`basename $kk`; kk3="${kk2%.*}" ; echo $kk3; more $kk | head -n 1 > ${kk3}.csv; more $kk | grep train >> ${kk3}.csv ; done
@@ -193,31 +193,32 @@ for kk in `ls cSCC102_v02a_tight_GP_dev_cohortadatas/cSCC102_NYUCSFBWH_448px_0um
 for kk in `ls ../../cSCC102_v02a_tight_GP_dev_cohort/adatasadatas/cSCC102_NYUCSFBWH_448px_0um252_he_complete_filtered_tight_NYUCSF_GP*`; do kk2=`basename $kk`; kk3="${kk2%.*}" ; echo $kk3; more $kk | head -n 1 > ${kk3}_valid.csv; more $kk | grep valid  >> ${kk3}_valid.csv ; done
 ```
 
-* Apply Cox Regression performed on the development cohort to this cohort
+**Apply Cox Regression performed on the development cohort to this cohort**
 ```shell
 sbatch sb_76_CoxReg.sh
 ```
 
-* Apply Cox Regression performed on the development cohort to this cohort (Individual resolution and penalty)
+**Apply Cox Regression performed on the development cohort to this cohort (Individual resolution and penalty)**
 ```shell
 sb_77_CoxReg_Indiv.sh
 ```
 
-* Perform the same for the log regression on the good/poor outcome binary classification. First, add information to the header of the h5 file:
+**Perform the same for the log regression on the good/poor outcome binary classification.** 
+First, add information to the header of the h5 file:
 ```shell
 sbatch sb_78_AddField_Mayo_bin.sh
 ```
 the `labels_SSL_Mayo_RFS_GP.csv` file contains the clinical data with the following columns:
-    - `slides`: slides basename - Must match the one in the h5 file (same field name)
-    - `outcome_binary`: either poor or good outcome class
+* `slides`: slides basename - Must match the one in the h5 file (same field name)
+* `outcome_binary`: either poor or good outcome class
 
-* Second, assign Leiden clusters:
+**Second, assign Leiden clusters**
 ```shell
 resolution=0.75
 sbatch --job-name=cSCC102_79_r${resolution}_300k --output=rq_cSCC102_79_r${resolution}_%A_%a_300k.out  --error=rq_cSCC102_79_r${resolution}_%A_%a_300k.err sb_79_AssignCluster_Mayo_GP.sh  $resolution
 ```
 
-* Third, infer the classes from the Logistic regression done on the development cohort:
+**Third, infer the classes from the Logistic regression done on the development cohort:**
 ```shell
 sb_80_LogisticReg.sh
 ```
