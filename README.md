@@ -207,10 +207,9 @@ sb_77_CoxReg_Indiv.sh
 ```shell
 sbatch sb_78_AddField_Mayo_bin.sh
 ```
-
 the `labels_SSL_Mayo_RFS_GP.csv` file contains the clinical data with the following columns:
-  - `slides`: slides basename - Must match the one in the h5 file (same field name)
-  - `outcome_binary`: either poor or good outcome class
+    - `slides`: slides basename - Must match the one in the h5 file (same field name)
+    - `outcome_binary`: either poor or good outcome class
 
 * Second, assign Leiden clusters:
 ```shell
